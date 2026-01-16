@@ -160,6 +160,11 @@ For questions, contributions, or collaboration inquiries:
 
 ---
 
+## ❤️ Sponsorship
+
+If you find this project useful for research or development, consider supporting it via GitHub Sponsors.
+
+
 ## 📖 Citation
 
 If you use **Drivora / ApolloSimFuzz** in your research, please cite the following papers:
