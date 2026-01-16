@@ -77,9 +77,10 @@ Apply the patches located in:
 ApolloSimFuzz/apollo_bridge/patches/
 ```
 
-Move `ApolloSimFuzz/apollo_bridge/patches/dev_start_ctn.sh` to `ApolloSimFuzz/apollo/scripts`;
+Move `ApolloSimFuzz/apollo_bridge/patches/dev_start_ctn.sh` to `ApolloSimFuzz/apollo/scripts`
 
 Replace `ApolloSimFuzz/apollo/WORKSPACE` by `ApolloSimFuzz/apollo_bridge/patches/WORKSPACE` for building issues.
+
 ---
 
 ### 🏗️ Step 2: Build Apollo inside Docker
