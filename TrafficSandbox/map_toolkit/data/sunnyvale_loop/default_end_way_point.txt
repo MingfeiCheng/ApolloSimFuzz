@@ -1,0 +1,303 @@
+landmark {
+  name: "Route: Reverse Early Change Lane",
+  waypoint {
+    pose {
+      x: 587102.288778
+      y: 4141556.49511
+    }
+  }
+  waypoint {
+    pose {
+      x: 587357.133333
+      y: 4141331.45953
+    }
+  }
+  waypoint {
+    pose {
+      x: 587413.080673
+      y: 4140799.88239
+    }
+  }
+  waypoint {
+    pose {
+      x: 587558.489074
+      y: 4140761.33465
+    }
+  }
+  waypoint {
+    pose {
+      x: 587620.792609
+      y: 4141484.54766
+    }
+  }
+  waypoint {
+    pose {
+      x: 587193.997163
+      y: 4141533.60712
+    }
+  }
+
+}
+
+landmark {
+  name: "Route: Sunnyvale Loop Reverse Full",
+  waypoint {
+    pose {
+      x: 587243.74
+      y: 4141521.08
+    }
+  }
+  waypoint {
+    pose {
+      x: 587349.256959
+      y: 4141302.14076
+    }
+  }
+  waypoint {
+    pose {
+      x: 587411.418598
+      y: 4140802.25047
+    }
+  }
+  waypoint {
+    pose {
+      x: 587580.568506
+      y: 4140848.0391
+    }
+  }
+  waypoint {
+    pose {
+      x: 587518.984339
+      y: 4141509.10285
+    }
+  }
+  waypoint {
+    pose {
+      x: 587198.65
+      y: 4141532.38
+    }
+  }
+}
+
+landmark {
+    name: "Route: Sunnyvale Loop Reverse",
+    waypoint {
+        pose {
+            x: 587363.55
+            y: 4141356.72
+        }
+    }
+    waypoint {
+        pose {
+            x: 587288.71
+            y: 4141060.12
+        }
+    }
+    waypoint {
+        pose {
+            x: 587325.20
+            y: 4140868.34
+        }
+    }
+    waypoint {
+        pose {
+            x: 587577.74
+            y: 4140850.80
+        }
+    }
+    waypoint {
+        pose {
+            x: 587190.10
+            y: 4141549.74
+        }
+    }
+    waypoint {
+        pose {
+            x: 587376.33
+            y: 4141406.76
+        }
+
+    }
+}
+
+landmark {
+    name: "Route: Sunnyvale Loop",
+    waypoint {
+        pose {
+            x: 586975.4
+            y: 4141275.8
+        }
+    }
+    waypoint {
+        pose {
+            x: 587676.4
+            y: 4141451.7
+        }
+    }
+    waypoint {
+        pose {
+            x: 586948.740120
+            y: 4141171.118641
+        }
+    }
+}
+
+landmark {
+    name: "Route: Sunnyvale Loop 2",
+    waypoint {
+        pose {
+            x: 587393.71
+            y: 4141474.50
+        }
+    }
+   waypoint {
+        pose {
+            x: 587167.48
+            y: 4140938.41
+        }
+    }
+   waypoint {
+        pose {
+            x: 586413.41
+            y: 4141233.38
+        }
+    }
+   waypoint {
+        pose {
+            x: 587629.03
+            y: 4141470.05
+        }
+    }
+   waypoint {
+        pose {
+            x: 587676.09
+            y: 4141476.49
+        }
+    }
+   waypoint {
+        pose {
+            x: 587077.19
+            y: 4141575.03
+        }
+    }
+    waypoint {
+        pose {
+            x: 587138.02
+            y: 4141195.75
+        }
+    }
+}
+
+landmark {
+    name: "Route: Sunnyvale Loop 3",
+    waypoint {
+        pose {
+            x: 587393.71
+            y: 4141474.50
+        }
+    }
+   waypoint {
+        pose {
+            x: 587167.48
+            y: 4140938.41
+        }
+    }
+   waypoint {
+        pose {
+            x: 586584.57
+            y: 4141307.13
+        }
+    }
+   waypoint {
+        pose {
+            x: 587629.03
+            y: 4141470.05
+        }
+    }
+   waypoint {
+        pose {
+            x: 587676.09
+            y: 4141476.49
+        }
+    }
+   waypoint {
+        pose {
+            x: 587077.19
+            y: 4141575.03
+        }
+    }
+    waypoint {
+        pose {
+            x: 587138.02
+            y: 4141195.75
+        }
+    }
+}
+
+
+landmark {
+    name: "Route: Sunnyvale Loop 4",
+    waypoint {
+        pose {
+            x: 587393.71
+            y: 4141474.50
+        }
+    }
+   waypoint {
+        pose {
+            x: 587167.48
+            y: 4140938.41
+        }
+    }
+   waypoint {
+        pose {
+            x: 586584.57
+            y: 4141307.13
+        }
+    }
+   waypoint {
+        pose {
+            x: 587629.03
+            y: 4141470.05
+        }
+    }
+   waypoint {
+        pose {
+            x: 587676.09
+            y: 4141476.49
+        }
+    }
+   waypoint {
+        pose {
+            x: 587077.19
+            y: 4141575.03
+        }
+    }
+    waypoint {
+        pose {
+            x: 587177.50
+            y: 4141537.59
+        }
+    }
+}
+
+
+landmark {
+    name: "POI: 1195 office",
+    waypoint {
+        pose {
+            x: 586384.291903
+            y: 4140676.936743
+        }
+    }
+}
+
+landmark {
+    name: "POI: 250 office",
+    waypoint {
+        pose {
+            x: 587169.102450
+            y: 4141539.780228
+        }
+    }
+}

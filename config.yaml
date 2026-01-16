@@ -1,0 +1,29 @@
+# Record global configuration
+run_tag: debug
+debug: true
+resume: true
+save_record: true
+
+# path
+apollo_root: "default" # you can change
+output_root: results
+
+# sandbox
+sandbox_image: 'drivora/sandbox:latest'
+sandbox_fps: 50.0
+
+# tester
+tester: 
+  type: 'random'  # the fuzzer to use
+  time_budget: 4  # hours, time budget for the fuzzer  
+  config_path: 'fuzzer/openscenario/random/configs/signalized_intersection.yaml' # just give the config path
+  
+scenario:
+  type: "openscenario"
+
+hydra:
+  output_subdir: null
+  job:
+    chdir: false
+  run:
+    dir: ${output_root}/hydra
