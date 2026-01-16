@@ -10,6 +10,7 @@ class PerfectTrafficLightPublisher(Publisher):
     channel: str = '/apollo/perception/traffic_light'
     msg_type: str = 'apollo.perception.TrafficLightDetection'
     msg_cls: any = TrafficLightDetection
+    frequency: float = 20.0
 
     def __init__(self, idx, bridge):
         super(PerfectTrafficLightPublisher, self).__init__(idx, bridge)

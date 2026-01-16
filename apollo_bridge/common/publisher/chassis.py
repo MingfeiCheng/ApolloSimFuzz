@@ -10,6 +10,7 @@ class ChassisPublisher(Publisher):
     channel: str = '/apollo/canbus/chassis'
     msg_type: str = 'apollo.canbus.Chassis'
     msg_cls: any = Chassis
+    frequency: float = 100.0
 
     def __init__(self, idx, bridge):
         super(ChassisPublisher, self).__init__(idx, bridge)

@@ -8,11 +8,15 @@ class Publisher(object):
     channel: str = '/default'
     msg_type: str = 'default'
     msg_cls: any = None
+    frequency: float = 100.0
 
     def __init__(self, idx, bridge: CyberBridge):
         self.idx = idx
         self.bridge = bridge
         self.frame_count = 0
+        self.period = 1.0 / self.frequency
+        self.last_publish_time = None
+        
         self._register()
 
     def _register(self):
@@ -21,7 +25,7 @@ class Publisher(object):
             self.msg_type
         )
 
-    def _process_data(self, message):
+    def _process_data(self, message) -> tuple:
         raise NotImplementedError("This method should be implemented by the subclass")
 
     def publish(self, message):
@@ -32,7 +36,13 @@ class Publisher(object):
             logger.warning(f"Publisher {self.channel} tick failed: {e}")
             traceback.print_exc()
             return
-
+        
+        timestamp = message.timestamp # NOTE: MUST have timestamp attribute
+        if self.last_publish_time is not None:
+            if timestamp - self.last_publish_time < self.period:
+                return  # Skip publishing to maintain frequency
+            self.last_publish_time = timestamp
+            
         if process_data is not None:
             try:
                 self.bridge.publish(self.channel, process_data.SerializeToString())

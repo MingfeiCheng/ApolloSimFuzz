@@ -43,6 +43,7 @@ class PerfectLocalizationPublisher(Publisher):
     channel: str = '/apollo/localization/pose'
     msg_type: str = 'apollo.localization.LocalizationEstimate'
     msg_cls: any = LocalizationEstimate
+    frequency: float = 100.0
 
     def __init__(self, idx, bridge):
         super(PerfectLocalizationPublisher, self).__init__(idx, bridge)

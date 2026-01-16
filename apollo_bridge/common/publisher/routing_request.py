@@ -12,6 +12,7 @@ class RoutingRequestPublisher(Publisher):
     channel: str = '/apollo/routing_request'
     msg_type: str = 'apollo.routing.RoutingRequest'
     msg_cls: any = RoutingRequest
+    frequency: float = 1000.0
 
     def __init__(self, idx, bridge):
         super(RoutingRequestPublisher, self).__init__(idx, bridge)

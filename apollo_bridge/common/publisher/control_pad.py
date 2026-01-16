@@ -11,11 +11,13 @@ class ControlPadPublisher(Publisher):
     channel: str = '/apollo/control/pad'
     msg_type: str = 'apollo.control.PadMessage'
     msg_cls: any = PadMessage
+    frequency: float = 1000.0 # set large as we do not need to limit the frequency here
 
     def __init__(self, idx, bridge):
         super(ControlPadPublisher, self).__init__(idx, bridge)
 
     def _process_data(self, message):
+        
         header = Header(
             timestamp_sec=message.timestamp,
             module_name='MAGGIE',

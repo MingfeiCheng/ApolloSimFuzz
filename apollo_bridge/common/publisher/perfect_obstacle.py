@@ -15,6 +15,7 @@ class PerfectObstaclePublisher(Publisher):
     channel: str = '/apollo/perception/obstacles'
     msg_type: str = 'apollo.perception.PerceptionObstacles'
     msg_cls: any = PerceptionObstacles
+    frequency: float = 20.0
 
     def __init__(self, idx, bridge):
         super(PerfectObstaclePublisher, self).__init__(idx, bridge)
