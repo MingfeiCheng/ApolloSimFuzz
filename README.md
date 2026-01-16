@@ -23,7 +23,7 @@ Before installation, please ensure the following dependencies are available on y
 ### Step 1: Navigate to the ApolloSim directory
 
 ```bash
-cd Drivora/ApolloSim
+cd Drivora/ApolloSimFuzz
 ````
 
 ### Step 2: Run the installation script
@@ -35,12 +35,12 @@ bash install.sh
 This script will automatically:
 
 * Clone the official [Baidu Apollo repository](https://github.com/ApolloAuto/apollo) into
-  `Drivora/ApolloSim/apollo`
+  `ApolloSimFuzz/apollo`
 * Create a Conda environment named
   `drivora-apollo-${APOLLO_VERSION}`
 * Install all required Python dependencies listed in `requirements.txt`
 * Build the **TrafficSandbox** Docker image from
-  `Drivora/ApolloSim/TrafficSandbox`
+  `ApolloSimFuzz/TrafficSandbox`
 
 > 📌 The Apollo version currently used is specified in the `VERSION` file.
 
@@ -57,13 +57,13 @@ Due to Apollo’s build and runtime requirements, several manual steps are requi
 Navigate to the Apollo directory:
 
 ```bash
-cd Drivora/ApolloSim/apollo
+cd ApolloSimFuzz/apollo
 ```
 
 Apply the patches located in:
 
 ```text
-Drivora/ApolloSim/apollo_bridge/patches/
+ApolloSimFuzz/apollo_bridge/patches/
 ```
 
 Please follow the detailed instructions provided in:
@@ -104,7 +104,7 @@ Inside the container, run:
 
 ---
 
-## 🚦 Build TrafficSandbox
+## 🚦 Build TrafficSandbox (Manually Install)
 
 ### Step 1: Enter the TrafficSandbox directory
 

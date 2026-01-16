@@ -1,29 +1,99 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -e  # Exit on error
+set -Eeuo pipefail
 
-apollo_version=$(cat VERSION)
-echo "Current project version is: $apollo_version"
+#######################################
+# Utilities
+#######################################
 
-git clone -b "v${apollo_version}.0" https://github.com/ApolloAuto/apollo.git
+log() {
+    echo -e "[ApolloSimFuzz] $*"
+}
 
-env_name="drivora-apollo-${apollo_version}"
+error() {
+    echo -e "[ApolloSimFuzz][ERROR] $*" >&2
+    exit 1
+}
 
-# Check if conda env exists
-if conda info --envs | awk '{print $1}' | grep -q "^${env_name}$"; then
-    echo "Conda environment '${env_name}' already exists. Skipping creation."
+trap 'error "Command failed at line $LINENO"' ERR
+
+#######################################
+# Load Apollo version
+#######################################
+
+if [[ ! -f VERSION ]]; then
+    error "VERSION file not found"
+fi
+
+apollo_version="$(cat VERSION)"
+log "Current Apollo version: ${apollo_version}"
+
+apollo_tag="v${apollo_version}.0"
+apollo_repo="https://github.com/ApolloAuto/apollo.git"
+
+#######################################
+# Clone Apollo (if not exists)
+#######################################
+
+if [[ -d apollo ]]; then
+    log "Apollo repository already exists. Skipping clone."
 else
-    echo "Creating conda environment '${env_name}'..."
+    log "Cloning Apollo (${apollo_tag})..."
+    git clone -b "${apollo_tag}" "${apollo_repo}" apollo
+fi
+
+#######################################
+# Conda environment setup
+#######################################
+
+env_name="apollosimfuzz-${apollo_version}"
+
+# Initialize conda
+if ! command -v conda &> /dev/null; then
+    error "Conda not found. Please install Anaconda/Miniconda first."
+fi
+
+eval "$(conda shell.bash hook)"
+
+if conda info --envs | awk '{print $1}' | grep -qx "${env_name}"; then
+    log "Conda environment '${env_name}' already exists. Skipping creation."
+else
+    log "Creating conda environment '${env_name}'..."
     conda create -n "${env_name}" python=3.7 -y
 fi
 
-# Activate environment (note: must be run via 'source')
-eval "$(conda shell.bash hook)"
+log "Activating conda environment '${env_name}'..."
 conda activate "${env_name}"
 
-# Install Python dependencies
-pip install -r requirements.txt
+#######################################
+# Python dependencies
+#######################################
 
-cd TrafficSandbox
+if [[ ! -f requirements.txt ]]; then
+    error "requirements.txt not found"
+fi
 
-docker build -t drivora/sandbox .
+log "Installing Python dependencies..."
+python -m pip install -r requirements.txt
+
+#######################################
+# TrafficSandbox setup
+#######################################
+
+if [[ ! -d TrafficSandbox ]]; then
+    error "TrafficSandbox directory not found"
+fi
+
+if [[ ! -f TrafficSandbox/install.sh ]]; then
+    error "TrafficSandbox/install.sh not found"
+fi
+
+log "Installing TrafficSandbox..."
+bash TrafficSandbox/install.sh
+
+#######################################
+# Done
+#######################################
+
+log "Installation completed successfully."
+log "Activated environment: ${env_name}"
