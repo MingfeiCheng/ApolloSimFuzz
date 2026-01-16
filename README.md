@@ -2,7 +2,7 @@
 
 **ApolloSimFuzz** integrates **Baidu Apollo** with **TrafficSandbox**, a lightweight traffic simulation framework, to support **flexible, scalable, and closed-loop testing** of Baidu Apollo’s **decision-making functionalities** in lightweight simulation environments.
 
-The framework is designed for **simulation-based testing and fuzzing**, where Apollo interacts with a traffic simulator through sensor inputs and control commands, enabling systematic evaluation of decision-making robustness under diverse traffic scenarios.
+The framework is designed for **simulation-based testing and fuzzing**, where Apollo interacts with a traffic simulator through perfect perception results and control commands, enabling systematic evaluation of decision-making robustness under diverse traffic scenarios.
 
 ---
 
