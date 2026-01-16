@@ -1,4 +1,15 @@
 # 🚗 ApolloSimFuzz
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord)](https://discord.gg/PpuwMwBWDS)
+
+> **Note**
+>
+> The documentation is currently **incomplete**. At this stage, the repository primarily provides a **working pipeline** for testing Baidu Apollo using a **lightweight traffic simulator**.
+>
+> The framework has been **tested to be stable** on my own server setup.  
+> Please feel free to **join our Discord** for quick discussions, and **open issues** for questions, bug reports, or suggestions.
+>
+> Contributions are very welcome — whether it is improving documentation, fixing bugs, or extending functionality. I sincerely appreciate any feedback or support from the community.
+
 
 **ApolloSimFuzz** integrates **Baidu Apollo** with **TrafficSandbox**, a lightweight traffic simulation framework, to support **flexible, scalable, and closed-loop testing** of Baidu Apollo’s **decision-making functionalities** in lightweight simulation environments.
 
@@ -66,14 +77,9 @@ Apply the patches located in:
 ApolloSimFuzz/apollo_bridge/patches/
 ```
 
-Please follow the detailed instructions provided in:
+Move `ApolloSimFuzz/apollo_bridge/patches/dev_start_ctn.sh` to `ApolloSimFuzz/apollo/scripts`;
 
-```text
-apollo_bridge/patches/README.md
-```
-
-These patches adapt Apollo for integration with **TrafficSandbox** and the ApolloSimFuzz workflow.
-
+Replace `ApolloSimFuzz/apollo/WORKSPACE` by `ApolloSimFuzz/apollo_bridge/patches/WORKSPACE` for building issues.
 ---
 
 ### 🏗️ Step 2: Build Apollo inside Docker
@@ -141,7 +147,6 @@ python start_fuzzer.py
 ## 📝 TODO
 
 This project currently provides **basic testing functionality** (e.g., random testing) and is **under active development**.
-The framework is usable, and feedback or issue reports are highly welcome.
 
 * [ ] Provide comprehensive documentation and usage examples
 * [ ] Refine minor components to improve robustness and stability

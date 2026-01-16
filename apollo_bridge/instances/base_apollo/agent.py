@@ -26,8 +26,9 @@ class ApolloAgent(AgentBase):
     prefix = 'apollo'
     container_record_folder = '/apollo/drivora/records'
     localization_frequency = 100.0
-    perception_frequency = 25.0
-    control_frequency = 200.0
+    perception_frequency  = 10.0
+    control_frequency     = 100.0
+
     sleep_interval = 0.001
     
     def __init__(
@@ -95,8 +96,10 @@ class ApolloAgent(AgentBase):
         )
 
         # --- Internal State ---
-        self.running = False
+        self.route_send = False
         self.route_response = False
+        self.route_send_time = 0.0
+        self.running = False
         self.ready = False
         self.threads: list[Thread] = []
 
@@ -154,7 +157,8 @@ class ApolloAgent(AgentBase):
             'chassis': self._build_chassis_message(ego_info, time_stamp),
             'localization': self._build_localization_message(ego_info, time_stamp),
             'perfect_obstacle': self._build_obstacle_message(actors, time_stamp),
-            'perfect_traffic_light': self._build_traffic_light_message(snapshot['signals'], time_stamp)
+            'perfect_traffic_light': self._build_traffic_light_message(snapshot['signals'], time_stamp),
+            'speed': ego_info['speed']
         }
 
     def _build_route_message(self, time_stamp):
@@ -247,46 +251,112 @@ class ApolloAgent(AgentBase):
         self.messenger.publish_message('publisher.control_pad', msg)
 
     def _publish_sensor(self):
+        """
+        Periodically publish ego & environment sensor messages.
+        Includes routing warm-up and ready-state transition.
+        """
         self._publish_pad_message(0.0, action=0)
+
         while self.running:
             try:
-                
                 snapshot = self._request_snapshot()
                 if snapshot is None:
                     time.sleep(self.sleep_interval)
                     continue
-                
-                now = snapshot['time']
+
+                now = snapshot["time"]
+                ego_speed = snapshot["speed"]
+                now_wall = time.time()
+
+                # --------------------------------
+                # 1. PAD / action message
+                # --------------------------------
                 if now < self.trigger_time:
                     self._publish_pad_message(now, action=0)
                 elif now < self.trigger_time + 0.5:
                     self._publish_pad_message(now, action=2)
 
-                if self._should_update(self.last_ego_update_time, self.localization_frequency, now):
+                # --------------------------------
+                # 2. Ego (chassis + localization)
+                # --------------------------------
+                if self._should_update(
+                    self.last_ego_update_time,
+                    self.localization_frequency,
+                    now,
+                ):
                     self.last_ego_update_time = now
-                    self.messenger.publish_message('publisher.chassis', snapshot['chassis'])
-                    self.messenger.publish_message('publisher.perfect_localization', snapshot['localization'])
+
+                    self.messenger.publish_message(
+                        "publisher.chassis", snapshot["chassis"]
+                    )
+                    self.messenger.publish_message(
+                        "publisher.perfect_localization",
+                        snapshot["localization"],
+                    )
+
+                    # -------- routing / ready FSM --------
                     if not self.ready:
-                        if not self.route_response:
-                            self.stable_time = time.time()
-                            self.messenger.publish_message('publisher.routing_request', snapshot['route'])
-                            self.route_response = True # self._check_route_response() # TODO: finish this
-                        elif time.time() - self.stable_time > 1.0:
+
+                        # send routing once
+                        if not self.route_send:
+                            self.route_send_time = now_wall
+                            self._publish_pad_message(now, action=0)
+                            self.messenger.publish_message(
+                                "publisher.routing_request",
+                                snapshot["route"],
+                            )
+                            self.route_send = True
+                            self._publish_pad_message(now, action=2)
+
+                        # wait for routing response (ego moves)
+                        elif not self.route_response:
+                            if now_wall - self.route_send_time < 5.0:
+                                if ego_speed > 0.05:
+                                    self.route_response = True
+
+                        # resend routing & reset control to stabilize
+                        else:
+                            if now_wall - self.route_send_time > 5.0:
+                                self._publish_pad_message(now, action=0)
+                                self.route_send_time = now_wall
+                                self.messenger.publish_message(
+                                    "publisher.routing_request",
+                                    snapshot["route"],
+                                )
+                                self._publish_pad_message(now, action=2)
+
                             self.ready = True
-                            self.sandbox_operator.sim.set_actor_status(self.id, 'ready')
+                            self.sandbox_operator.sim.set_actor_status(
+                                self.id, "ready"
+                            )
 
-                if self._should_update(self.last_env_update_time, self.perception_frequency, now):
+                # --------------------------------
+                # 3. Environment perception
+                # --------------------------------
+                if self._should_update(
+                    self.last_env_update_time,
+                    self.perception_frequency,
+                    now,
+                ):
                     self.last_env_update_time = now
-                    self.messenger.publish_message('publisher.perfect_obstacle', snapshot['perfect_obstacle'])
-                    self.messenger.publish_message('publisher.perfect_traffic_light', snapshot['perfect_traffic_light'])
 
-            except Exception as e:
+                    self.messenger.publish_message(
+                        "publisher.perfect_obstacle",
+                        snapshot["perfect_obstacle"],
+                    )
+                    self.messenger.publish_message(
+                        "publisher.perfect_traffic_light",
+                        snapshot["perfect_traffic_light"],
+                    )
+
+            except Exception:
                 if self.logger:
                     self.logger.exception(f"[{self.id}] Error in _publish_sensor")
-                    
-                logger.error(f"[{self.id}] Error in _publish_sensor: {e}: {traceback.print_exc()}")
-                
+                else:
+                    logger.exception(f"[{self.id}] Error in _publish_sensor")
+
             time.sleep(self.sleep_interval)
+
 
     def _receive_control(self):
         while self.running:
