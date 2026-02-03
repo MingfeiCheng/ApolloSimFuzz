@@ -3,14 +3,17 @@ run_tag: debug
 debug: true
 resume: true
 save_record: true
+use_dreamview: true
 
 # path
+apollo_tag: "default"
 apollo_root: "default" # you can change
 output_root: results
+fuzzer_dir: "fuzzer/openscenario/random"
 
 # sandbox
 sandbox_image: 'drivora/sandbox:latest'
-sandbox_fps: 50.0
+sandbox_fps: 20.0
 
 # tester
 tester: 

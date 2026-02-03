@@ -129,7 +129,8 @@ class ApolloContainer:
             # start_script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts', 'dev_start_ctn.sh')
             
             start_script_path = os.path.join(self.apollo_root, "docker", "scripts", "dev_start_ctn.sh")
-            options = f"-y -l --gpus {str(self.gpu_usage)} --cpus {self.cpu_usage}"
+            # options = f"-y -l --gpus {str(self.gpu_usage)} --cpus {self.cpu_usage}"
+            options = f"-y -l"
             if self.map_dreamview:
                 options += f" -md"
             docker_script_dir = os.path.join(self.apollo_root, "docker", "scripts")
@@ -522,57 +523,3 @@ class ApolloContainer:
 
         logger.info(f"Apollo container {self.name} started successfully")
         return True
-
-
-    # def start(self) -> bool:
-    #     self.start_container()
-
-    #     # clean logs
-    #     self.clean_cache()
-        
-    #     correct_setup_dm = self.start_dreamview(self.hd_map)
-        
-    #     if not correct_setup_dm:
-    #         for _ in range(5):
-    #             logger.warning(f'Restart Apollo container: {self.name} due to Dreamview not running')
-    #             self.restart_container()
-    #             self.clean_cache()
-    #             correct_setup_dm = self.start_dreamview(self.hd_map)
-    #             if correct_setup_dm:
-    #                 break
-        
-    #     if not correct_setup_dm:
-    #         raise RuntimeError(f'Dreamview not running after several retries: {self.name}')
-            
-    #         # # logger.debug(f"bridge: {self.bridge}")
-    #         # # repeat 5 times in total
-    #         # restart_flag = False
-    #         # for _ in range(5):
-
-    #         #     if restart_flag:
-    #         #         logger.warning(f'Restart Apollo container: {self.name}:{restart_flag}')
-    #         #         self.restart_container()
-
-    #         #     # self.start_bridge()
-    #         #     # logger.debug(f"bridge: {self.bridge}")
-    #         #     if not self.is_dreamview_running:
-    #         #         restart_flag = True
-    #         #     else:
-    #         #         break
-
-    #     # only start once if apollo is ok
-    #     # restart  modules
-    #     # must clean all modules first
-    #     self.stop_recorder()
-        
-    #     # self.disable_modules_script()
-    #     if not self.is_modules_running:
-    #         start_time = time.time()
-    #         self.disable_modules_script()
-    #         while time.time() - start_time <120.0:
-    #             self.start_modules_script()
-    #             time.sleep(10.0)
-    #             if self.is_modules_running:
-    #                 break
-                
-    #     # self.start_modules_script()

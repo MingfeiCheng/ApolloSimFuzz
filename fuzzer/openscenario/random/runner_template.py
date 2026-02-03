@@ -311,7 +311,9 @@ class FuzzerTemplate(Fuzzer):
             
             scenario_exec_status = exec_res['status']
             scenario_dir = exec_res['scenario_dir']
-                        
+            
+            scenario_config = individuals[ind_index][0].scenario
+                   
             if not scenario_exec_status:
                 # has error of this execution
                 # no update this individual
@@ -324,22 +326,24 @@ class FuzzerTemplate(Fuzzer):
                     "offline_results": {}
                 }
                 
+                scenario_observation = []
+                
             else:
             
-                # visualize_trajectories(scenario_dir)
+                visualize_trajectories(scenario_dir)
                 
                 scenario_observation = load_observation(scenario_dir)
                 runtime_oracle_results = load_runtime_result(scenario_dir)
                 runtime_oracle_results= runtime_oracle_results["ego"]
                 
                 oracle_result = self.oracle.evaluate(scenario_observation, runtime_oracle_results)
-                                
-                # some info can reused in feedback
-                feedback_result = self.feedback.evaluate(
-                    scenario_observation, 
-                    oracle_result,
-                    scenario_config=individuals[ind_index][0].scenario
-                )
+                            
+            # some info can reused in feedback
+            feedback_result = self.feedback.evaluate(
+                scenario_observation, 
+                oracle_result,
+                scenario_config=scenario_config
+            )
             
             seed = individuals[ind_index][0]
             seed.oracle_result = oracle_result

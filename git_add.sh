@@ -18,6 +18,7 @@ INCLUDE_LIST=(
   README.md
   requirements.txt
   VERSION
+  documents
 )
 
 find . -type d -name "__pycache__" -exec rm -rf {} +

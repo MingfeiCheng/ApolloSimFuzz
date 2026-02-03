@@ -32,7 +32,7 @@ class PerfectTrafficLightPublisher(Publisher):
                 tl.color = TrafficLight.Color.YELLOW
             elif tl_state.state == "red":
                 tl.color = TrafficLight.Color.RED
-            elif tl_state.state == "unknown":
+            elif tl_state.state == "black":
                 tl.color = TrafficLight.Color.BLACK
             else:
                 tl.color = TrafficLight.Color.UNKNOWN

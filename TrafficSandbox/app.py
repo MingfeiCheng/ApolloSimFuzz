@@ -310,11 +310,11 @@ if __name__ == "__main__":
     logger.add(
         logger_file,
         level=level,
-        mode="a",  # Append mode
-        rotation="10 MB",  # Create a new log file when size > 10MB
-        retention="5 days",  # Delete logs older than 5 days
-        compression="zip",  # Optional: Compress old logs
+        mode="a",
+        rotation="10 MB",   # 超过 10MB 触发轮转
+        retention=0,        # 旧日志立刻删除
     )
+
 
     sandbox = TrafficSandbox(fps=Config.fps)
     sandbox.start()

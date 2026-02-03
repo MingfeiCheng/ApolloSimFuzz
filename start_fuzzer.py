@@ -13,8 +13,11 @@ from registry.utils import discover_modules
 @hydra.main(config_path='.', config_name='config', version_base=None)
 def main(cfg: DictConfig):
     # CUDA_VISIBLE_DEVICES=2,3 python start_fuzzer.py
+    fuzzer_dir = cfg.get('fuzzer_dir', None)
+    if fuzzer_dir is None:
+        raise ValueError("Please provide the fuzzer directory.")
     
-    discover_modules(os.path.dirname(os.path.abspath(__file__)))
+    discover_modules(os.path.dirname(os.path.abspath(__file__)), fuzzer_dir)
     
     scenario_config = cfg.get('scenario', None)
     if scenario_config is None:
@@ -28,6 +31,8 @@ def main(cfg: DictConfig):
     fuzzer_type = fuzzer_config.get('type', None)
     
     # config parameters
+    RunnerConfig.use_dreamview = cfg.use_dreamview
+    RunnerConfig.apollo_tag = cfg.apollo_tag
     RunnerConfig.run_tag = cfg.run_tag
     RunnerConfig.debug = cfg.debug
     RunnerConfig.resume = cfg.resume
@@ -67,7 +72,8 @@ def main(cfg: DictConfig):
         scenario_config
     )
     try:
-        fuzzer_instance.run()
+        if not fuzzer_instance.finish_flag:
+            fuzzer_instance.run()
     except KeyboardInterrupt:
         fuzzer_instance.close()
     finally:

@@ -216,8 +216,8 @@ class ScenarioManager(ABC, Generic[MScenarioConfigT]):
                 time.sleep(0.01)
                 continue
 
-            curr_frame = int(time_info['frame']) # 100 hz -> 0.01
-            if (curr_frame - start_frame) % 10 == 0 and curr_frame > last_frame:
+            curr_frame = int(time_info['frame']) # 100 hz -> 0.01 % if 20 hz, 2 * 0.05 = 0.1s
+            if (curr_frame - start_frame) % 2 == 0 and curr_frame > last_frame:
                 scene_observation = {
                     'frame': curr_frame - start_frame,
                     'curr_frame': curr_frame,
@@ -397,25 +397,6 @@ class SubScenarioManager(ABC, Generic[AgentConfigT]):
             self.agents[config.id] = agent
             self.agent_processes[config.id] = agent.proc
 
-    # def create_agents(self):
-    #     for config in self.configs:
-    #         agent_kwargs = self._get_agent_config(config)
-    #         # agent = MPAgentHandle(
-    #         #     agent_cls=self._get_agent_cls(),
-    #         #     agent_kwargs=dict(
-    #         #         id=config.id,
-    #         #         sim_ctn_name=self.sandbox_container_name,
-    #         #         actor_config=config.to_dict(),
-    #         #         other_config={}
-    #         #     )
-    #         # )
-    #         agent = MPAgentHandle(
-    #             agent_cls=self._get_agent_cls(),
-    #             agent_kwargs=agent_kwargs
-    #         )
-    #         self.agents[config.id] = agent
-    #         self.subprocess_pids.append(agent.pid)
-    
     def _get_agent_config(self, config: AgentConfigT) -> dict:
         raise NotImplementedError("This method should be implemented in subclass")
         

@@ -24,7 +24,8 @@ def create_apollo_ctn_configs(
     apollo_root, 
     dreamview_port=8888, 
     bridge_port=9090,
-    apollo_ctn_num=1
+    apollo_ctn_num=1,
+    use_dreamview=True
 ) -> List['ApolloCtnConfig']:
     # Detect available GPUs
     available_gpus = get_available_gpus()
@@ -43,6 +44,10 @@ def create_apollo_ctn_configs(
         else:
             # With multiple GPUs, assign containers in a round-robin fashion
             gpu_id = available_gpus[i % num_gpus]
+            
+        map_dreamview = False
+        if use_dreamview and i == 0:
+            map_dreamview = True  # only map the first container, in case of port conflict # TODO: can be improved
 
         op_cfg = ApolloCtnConfig(
             idx=i,
@@ -52,7 +57,7 @@ def create_apollo_ctn_configs(
             apollo_root=apollo_root,
             dreamview_port=dreamview_port,
             bridge_port=bridge_port,
-            map_dreamview=True if i == 0 else False, # only map the first container, in case of port conflict # TODO: can be improved
+            map_dreamview=map_dreamview
         )
         logger.info(f"Container {op_cfg.container_name} started on GPU {gpu_id}.")
         operators.append(op_cfg)

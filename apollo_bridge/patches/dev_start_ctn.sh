@@ -21,7 +21,7 @@ source "${CURR_DIR}/docker_base.sh"
 CACHE_ROOT_DIR="${APOLLO_ROOT_DIR}/.cache"
 
 DOCKER_REPO="apolloauto/apollo"
-DEV_CONTAINER="apollo_dev_${USER}"
+DEV_CONTAINER="${USER}"
 DEV_INSIDE="in-dev-docker"
 
 SUPPORTED_ARCHS=(x86_64 aarch64)
@@ -121,16 +121,6 @@ function parse_arguments() {
 
             -md | --map_dreamview)
                 MAP_DREAMVIEW=1
-                ;;
-
-            --gpus)
-                export GPU_USAGE="$1"
-                shift
-                ;;
-
-            --cpus)
-                export CPU_USAGE="$1"
-                shift
                 ;;
 
             --shm-size)
@@ -399,8 +389,6 @@ function main() {
       ${DOCKER_RUN_CMD} -itd \
           --privileged \
           --name "${DEV_CONTAINER}" \
-          --gpus \"device=${GPU_USAGE}\" \
-          --cpus="${CPU_USAGE}" \
           -e DISPLAY="${display}" \
           -e DOCKER_USER="${user}" \
           -e USER="${user}" \
@@ -427,8 +415,6 @@ function main() {
       ${DOCKER_RUN_CMD} -itd \
           --privileged \
           --name "${DEV_CONTAINER}" \
-          --gpus \"device=${GPU_USAGE}\" \
-          --cpus="${CPU_USAGE}" \
           -e DISPLAY="${display}" \
           -e DOCKER_USER="${user}" \
           -e USER="${user}" \

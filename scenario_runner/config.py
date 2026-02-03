@@ -48,6 +48,8 @@ class RunnerConfig:
     sandbox_fps: float = 25.0  # the fps of the simulator sandbox # TODO: check this
     
     # apollo
+    use_dreamview: bool = True  # whether to use dreamview
+    apollo_tag: str = "default"  # the apollo git branch or tag to use
     apollo_root: str = os.path.join(project_dir, 'apollo')  # the apollo root directory
     dreamview_port: int = _resolve_dreamview_port(apollo_root)
     bridge_port: int = 9090

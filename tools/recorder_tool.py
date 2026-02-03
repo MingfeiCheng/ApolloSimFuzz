@@ -11,37 +11,6 @@ from collections import defaultdict
 from loguru import logger
 from natsort import natsorted
 
-def images_to_video(image_folder, output_path, fps=30, delete_folder=True):
-    # Get list of image files (sorted naturally: 1.png, 2.png, ..., 10.png)
-    image_files = [f for f in os.listdir(image_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    image_files = natsorted(image_files)  # sort filenames like humans
-
-    if not image_files:
-        logger.info("[!] No images found.")
-        return
-
-    # Read the first image to get size
-    first_image = cv2.imread(os.path.join(image_folder, image_files[0]))
-    height, width, _ = first_image.shape
-
-    # Define video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or 'XVID'
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-    for img_file in image_files:
-        img_path = os.path.join(image_folder, img_file)
-        img = cv2.imread(img_path)
-        if img is None:
-            logger.info(f"[!] Skipping unreadable image: {img_file}")
-            continue
-        out.write(img)
-
-    out.release()
-    logger.info(f"[✓] Video saved to: {output_path}")
-    
-    if delete_folder:
-        shutil.rmtree(image_folder)
-
 def load_observation(scenario_dir):
     observation_file = os.path.join(scenario_dir, "observation.jsonl.gz")
     data = []
@@ -84,27 +53,55 @@ def visualize_trajectories(scenario_dir: str, downsample: int = 1):
     for ego in scenario_data.get("ego_vehicles", []):
         ego_id = str(ego.get("id"))
         for wp in ego.get("route", []):
-            pre_traj[ego_id].append((wp["x"], wp["y"]))
+            pre_traj[ego_id].append((wp['location']["x"], wp['location']["y"]))
 
     for npc in scenario_data.get("npc_vehicles", []):
         npc_id = str(npc.get("id"))
         for wp in npc.get("route", []):
-            pre_traj[npc_id].append((wp["x"], wp["y"]))
+            pre_traj[npc_id].append((wp['location']["x"], wp['location']["y"]))
 
     # ========= Observed trajectories =========
+    # post_traj = defaultdict(list)
+    # if obs_data_raw:
+    #     frames = obs_data_raw if isinstance(obs_data_raw, list) else []
+    #     for idx, frame in enumerate(frames):
+    #         if POST_DOWNSAMPLE > 1 and (idx % POST_DOWNSAMPLE != 0):
+    #             continue
+    #         for ego_id, ego_item in frame.get("egos", {}).items():
+    #             loc = ego_item.get("location")
+    #             post_traj[str(ego_id)].append((float(loc[0]), float(loc[1])))
+    #         for npc_item in frame.get("other_actors", {}).get("vehicles", {}):
+    #             npc_id = npc_item.get("config_id", "unknown")
+    #             loc = npc_item.get("location")
+    #             post_traj[str(npc_id)].append((float(loc[0]), float(loc[1])))
+    # ========= Observed trajectories =========
     post_traj = defaultdict(list)
+
     if obs_data_raw:
         frames = obs_data_raw if isinstance(obs_data_raw, list) else []
+
         for idx, frame in enumerate(frames):
             if POST_DOWNSAMPLE > 1 and (idx % POST_DOWNSAMPLE != 0):
                 continue
-            for ego_id, ego_item in frame.get("egos", {}).items():
-                loc = ego_item.get("location")
-                post_traj[str(ego_id)].append((float(loc[0]), float(loc[1])))
-            for npc_item in frame.get("other_actors", {}).get("vehicles", {}):
-                npc_id = npc_item.get("config_id", "unknown")
-                loc = npc_item.get("location")
-                post_traj[str(npc_id)].append((float(loc[0]), float(loc[1])))
+
+            snapshot = frame.get("snapshot", {})
+            actors = snapshot.get("actors", {})
+
+            for actor_id, actor in actors.items():
+                # 只画 vehicle（如果以后有 pedestrian / cyclist）
+                # if actor.get("category") != "vehicle":
+                #     continue
+
+                loc = actor.get("location")
+                if not loc:
+                    continue
+
+                x = loc.get("x")
+                y = loc.get("y")
+                if x is None or y is None:
+                    continue
+
+                post_traj[str(actor_id)].append((float(x), float(y)))
 
     # ========= Helper functions =========
     def plot_traj(ax, traj_xy, ego_id, phase="pre", style="-", color=None):
@@ -164,43 +161,3 @@ def visualize_trajectories(scenario_dir: str, downsample: int = 1):
     plt.savefig(SAVE_PNG_TRAJ, bbox_inches="tight")
     logger.info(f"[OK] Saved trajectories figure to: {SAVE_PNG_TRAJ}")
     plt.close(fig2)
-
-
-class DisplayInterface(object):
-
-    def __init__(self):
-        self._width = 1200
-        self._height = 400
-        self._surface = None
-
-    def run_interface(self, input_data):
-        rgb_front = cv2.cvtColor(input_data['recorder_rgb_front'][1][:, :, :3], cv2.COLOR_BGR2RGB)
-
-        rgb = cv2.resize(rgb_front, (1200, 400))
-        surface = np.zeros((400, 1200, 3), np.uint8)
-        surface[:, :1200] = rgb
-
-        if 'vis_text' in input_data:
-            vis_text = input_data['vis_text']
-            surface = cv2.putText(surface, vis_text['basic_info'], (20, 290), cv2.FONT_HERSHEY_TRIPLEX, 0.6,
-                                  (0, 0, 255), 1)
-            # surface = cv2.putText(surface, vis_text['plan'], (20, 710), cv2.FONT_HERSHEY_TRIPLEX, 0.75, (0, 0, 255), 1)
-            surface = cv2.putText(surface, vis_text['control'], (20, 330), cv2.FONT_HERSHEY_TRIPLEX, 0.6,
-                                  (0, 0, 255),
-                                  1)
-            surface = cv2.putText(surface, vis_text['others'], (20, 370), cv2.FONT_HERSHEY_TRIPLEX, 0.6,
-                                  (0, 0, 255),
-                                  1)
-
-        return surface
-    
-def get_recorder_sensors():
-    return [
-        {
-            'type': 'sensor.camera.rgb',
-            'x': - 10.0, 'y': 0.0, 'z': 2.0,
-            'roll': 0.0, 'pitch': -15.0, 'yaw': 0.0,
-            'width': 1200, 'height': 400, 'fov': 100,
-            'id': 'recorder_rgb_front'
-        }
-    ]

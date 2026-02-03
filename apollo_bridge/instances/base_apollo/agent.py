@@ -97,11 +97,10 @@ class ApolloAgent(AgentBase):
         self.running = False
         self.ready = False
         self.threads: list[Thread] = []
+        self.current_game_time = 0.0
 
         self.actor_info = None
         self.last_snapshot_time = 0.0
-        self.last_ego_update_time = 0.0
-        self.last_env_update_time = 0.0
         self.last_sequence_num = 0
         self.last_planning_update_time = time.time()
 
@@ -133,16 +132,20 @@ class ApolloAgent(AgentBase):
         if snapshot is None:
             return None
 
-        time_stamp = snapshot['time']['game_time']
-        if time_stamp <= self.last_snapshot_time:
-            return None
+        # time_stamp = snapshot['time']['game_time']
+        # if time_stamp <= self.last_snapshot_time:
+        #     return None
         
-        self.last_snapshot_time = time_stamp
+        # self.last_snapshot_time = time_stamp
         actors = snapshot['actors']
         ego_info = actors[self.id]
         self.actor_info = copy.deepcopy(ego_info)
-
+    
+        # NOTE: we need to use system time, as it is sensors, independent of game time pause
+        time_stamp = time.time()
+    
         return {
+            'game_time': snapshot['time']['game_time'],
             'time': time_stamp,
             'route': self._build_route_message(time_stamp),
             'chassis': self._build_chassis_message(ego_info, time_stamp),
@@ -248,22 +251,24 @@ class ApolloAgent(AgentBase):
                     continue
 
                 now = snapshot["time"]
+                now_game_time = snapshot["game_time"]
+                self.current_game_time = now_game_time
                 ego_speed = snapshot["speed"]
                 now_wall = time.time()
 
                 # --------------------------------
                 # 1. PAD / action message
                 # --------------------------------
-                if now < self.trigger_time:
-                    self._publish_pad_message(now, action=0)
-                elif now < self.trigger_time + 0.5:
-                    self._publish_pad_message(now, action=2)
+                # logger.debug(f'[{self.id}] Current time: {now:.2f}s, trigger_time={self.trigger_time:.2f}s')
+                # if now < 50.0:
+                #     self._publish_pad_message(now, action=0)
+                # elif now < self.trigger_time + 0.5:
+                #     logger.debug(f'[{self.id}] Triggering PAD START action at time {now:.2f}s trigger_time={self.trigger_time:.2f}s')
+                #     self._publish_pad_message(now, action=2)
 
                 # --------------------------------
                 # 2. Ego (chassis + localization)
                 # --------------------------------
-                self.last_ego_update_time = now
-
                 self.messenger.publish_message(
                     "publisher.chassis", snapshot["chassis"]
                 )
@@ -278,13 +283,15 @@ class ApolloAgent(AgentBase):
                     # send routing once
                     if not self.route_send:
                         self.route_send_time = now_wall
-                        self._publish_pad_message(now, action=0)
+                        # self._publish_pad_message(now, action=0)
                         self.messenger.publish_message(
                             "publisher.routing_request",
                             snapshot["route"],
                         )
                         self.route_send = True
                         self._publish_pad_message(now, action=2)
+                        # if now > self.trigger_time:
+                        #     self._publish_pad_message(now, action=2)
 
                     # wait for routing response (ego moves)
                     elif not self.route_response:
@@ -295,13 +302,15 @@ class ApolloAgent(AgentBase):
                     # resend routing & reset control to stabilize
                     else:
                         if now_wall - self.route_send_time > 5.0:
-                            self._publish_pad_message(now, action=0)
+                            # self._publish_pad_message(now, action=0)
                             self.route_send_time = now_wall
                             self.messenger.publish_message(
                                 "publisher.routing_request",
                                 snapshot["route"],
                             )
                             self._publish_pad_message(now, action=2)
+                            # if now > self.trigger_time:
+                            #     self._publish_pad_message(now, action=2)
 
                         self.ready = True
                         self.sandbox_operator.sim.set_actor_status(
@@ -311,8 +320,6 @@ class ApolloAgent(AgentBase):
                 # --------------------------------
                 # 3. Environment perception
                 # --------------------------------
-                self.last_env_update_time = now
-
                 self.messenger.publish_message(
                     "publisher.perfect_obstacle",
                     snapshot["perfect_obstacle"],
@@ -334,9 +341,10 @@ class ApolloAgent(AgentBase):
     def _receive_control(self):
         while self.running:
             throttle, brake, steer, reverse = self.messenger.subscriber_pool['subscriber.control'].get_data()
-            self.sandbox_operator.sim.apply_vehicle_control(self.id, {
-                'throttle': throttle, 'brake': brake, 'steer': steer, 'reverse': reverse
-            })
+            if self.current_game_time > self.trigger_time:
+                self.sandbox_operator.sim.apply_vehicle_control(self.id, {
+                    'throttle': throttle, 'brake': brake, 'steer': steer, 'reverse': reverse
+                })
             # time.sleep(1 / self.control_frequency)
             time.sleep(self.sleep_interval)
 

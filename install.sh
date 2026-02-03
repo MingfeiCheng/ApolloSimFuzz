@@ -77,23 +77,26 @@ log "Installing Python dependencies..."
 python -m pip install -r requirements.txt
 
 #######################################
-# TrafficSandbox setup
+# TrafficSandbox setup - create docker images
 #######################################
 
 if [[ ! -d TrafficSandbox ]]; then
     error "TrafficSandbox directory not found"
 fi
 
-if [[ ! -f TrafficSandbox/install.sh ]]; then
-    error "TrafficSandbox/install.sh not found"
+if [[ ! -f TrafficSandbox/build.sh ]]; then
+    error "TrafficSandbox/build.sh not found"
 fi
 
 log "Installing TrafficSandbox..."
-bash TrafficSandbox/install.sh
+(
+  cd TrafficSandbox || exit 1
+  bash build.sh
+)
+
 
 #######################################
 # Done
 #######################################
-
 log "Installation completed successfully."
-log "Activated environment: ${env_name}"
+log "Can use conda environment: ${env_name}"

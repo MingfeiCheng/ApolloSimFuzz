@@ -14,7 +14,6 @@ class Publisher(object):
         self.idx = idx
         self.bridge = bridge
         self.frame_count = 0
-        self.period = 1.0 / self.frequency
         self.last_publish_time = None
         
         self._register()
@@ -29,6 +28,8 @@ class Publisher(object):
         raise NotImplementedError("This method should be implemented by the subclass")
 
     def publish(self, message):
+        
+        period = 1.0 / self.frequency
 
         try:
             process_data = self._process_data(message)
@@ -39,10 +40,11 @@ class Publisher(object):
         
         timestamp = message.timestamp # NOTE: MUST have timestamp attribute
         if self.last_publish_time is not None:
-            if timestamp - self.last_publish_time < self.period:
+            if timestamp - self.last_publish_time < period:
                 return  # Skip publishing to maintain frequency
-            self.last_publish_time = timestamp
-            
+        
+        self.last_publish_time = timestamp
+        
         if process_data is not None:
             try:
                 self.bridge.publish(self.channel, process_data.SerializeToString())

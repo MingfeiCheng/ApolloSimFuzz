@@ -1,5 +1,4 @@
 import os
-import ray
 import time
 import copy
 import math
@@ -50,7 +49,7 @@ def get_basic_config():
         "min_distance": 6.0, # to filter next waypoint
         "collision_distance_threshold": 5.0,
         "pid_lateral_cfg": {
-            'K_P': 1.2,
+            'K_P': 1.3,
             'K_D': 0.05,
             'K_I': 0.01,
         },
@@ -111,6 +110,7 @@ class WaypointVehicleAgent(AgentBase):
         # actor configs
         self.actor_config_py: WaypointVehicleConfig = WaypointVehicleConfig.model_validate(self.actor_config)
         self.route = [wp.model_dump() for wp in self.actor_config_py.route] # convert to dict
+        self.trigger_time = self.actor_config_py.trigger_time
 
         parameters = get_basic_config()
         parameters.update(self.user_parameters)
@@ -121,6 +121,7 @@ class WaypointVehicleAgent(AgentBase):
         self._last_move_time = 0.0
         self._dt = 1.0 / self.running_frequency
         self.step = 0
+        self.last_move_time = 0.0
         
         if self.debug:
             os.makedirs(self.debug_folder, exist_ok=True)
@@ -179,9 +180,17 @@ class WaypointVehicleAgent(AgentBase):
         
         time_info = snapshot.get('time', {})
         current_game_time = time_info.get('game_time', 0.0)
+        
+        # not started yet
+        if current_game_time < self.trigger_time:
+            self._apply_control(0.0, 1.0, 0.0)
+            self.task_finished = False
+            self._last_move_time = current_game_time
+            return
+        
         if curr_speed <= 0.001:
             delta_time = current_game_time - self._last_move_time
-            if delta_time >= 30.0:
+            if delta_time > 30.0:
                 self.task_finished = True
         else:
             self._last_move_time = current_game_time
