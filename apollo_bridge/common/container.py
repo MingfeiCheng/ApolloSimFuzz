@@ -33,9 +33,19 @@ class ApolloContainer:
 
         self.APOLLO_MODULES = modules
 
+        # NOTE: Apollo's dev start scripts create a docker container named:
+        #   apollo_dev_${USER}
+        # In this project, we set USER=<instance_name> when starting containers,
+        # so the actual docker container is `apollo_dev_<instance_name>`.
+        # Keep `instance_name` for logging, but always use `container_name`
+        # for docker API calls / docker exec / docker start.
         self.user = name
-        self.name = name
-        # self.name = f"apollo_dev_{self.user}"  # test for name
+        self.instance_name = name
+        # Backward-compat: other parts of the codebase expect `.name` to exist.
+        # Here `.name` refers to the logical instance name (e.g. "apollo_debug_0"),
+        # not the docker container name.
+        self.name = self.instance_name
+        self.container_name = f"apollo_dev_{self.user}"
         # create docker container if it is not exist
         self.hd_map = map_name
         self.apollo_root = apollo_root
@@ -64,11 +74,17 @@ class ApolloContainer:
 
         :type: str
         """
-        ctn = docker.from_env().containers.get(self.name)
-        host = ctn.attrs['NetworkSettings']['IPAddress']
-        if host == '':
-            return 'localhost'
-        return ctn.attrs['NetworkSettings']['IPAddress']
+        ctn = docker.from_env().containers.get(self.container_name)
+        ns = ctn.attrs.get("NetworkSettings") or {}
+        ip = ns.get("IPAddress")
+        if ip:
+            return ip
+        networks = ns.get("Networks") or {}
+        for net in networks.values():
+            ip = net.get("IPAddress")
+            if ip:
+                return ip
+        return "localhost"
 
     @property
     def is_container_running(self) -> bool:
@@ -79,7 +95,7 @@ class ApolloContainer:
         :rtype: bool
         """
         try:
-            return docker.from_env().containers.get(self.name).status == 'running'
+            return docker.from_env().containers.get(self.container_name).status == 'running'
         except Exception:
             return False
 
@@ -118,14 +134,14 @@ class ApolloContainer:
         client = docker.from_env()
         has_create = False
         try:
-            container = client.containers.get(self.name)
+            _ = client.containers.get(self.container_name)
             has_create = True
-            # logger.debug(f'Apollo instance {self.name} already exists')
+            # logger.debug(f'Apollo instance {self.container_name} already exists')
         except Exception as e:
             pass
 
         if not has_create:
-            logger.info(f'Create Apollo container {self.name}')
+            logger.info(f'Create Apollo container {self.container_name}')
             # start_script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts', 'dev_start_ctn.sh')
             
             start_script_path = os.path.join(self.apollo_root, "docker", "scripts", "dev_start_ctn.sh")
@@ -148,11 +164,11 @@ class ApolloContainer:
     def start_container(self):
         # while not self.is_container_running:
         if self.is_container_running:
-            logger.debug(f'Apollo container {self.name} is already running')
+            logger.debug(f'Apollo container {self.container_name} is already running')
             return True
         
-        logger.info(f'Start Apollo container {self.name}')
-        cmd = f'docker start {self.name}'
+        logger.info(f'Start Apollo container {self.container_name}')
+        cmd = f'docker start {self.container_name}'
         _ = subprocess.run(cmd, shell=True)
         time.sleep(0.5)
         self.start_time = time.time()
@@ -161,8 +177,8 @@ class ApolloContainer:
         """
         Restarts an Apollo container instance
         """
-        logger.info(f'Restart Apollo container {self.name}')
-        cmd = f'docker restart {self.name}'
+        logger.info(f'Restart Apollo container {self.container_name}')
+        cmd = f'docker restart {self.container_name}'
         _ = subprocess.run(cmd, shell=True)
         time.sleep(0.5)
         self.start_time = time.time()
@@ -174,8 +190,8 @@ class ApolloContainer:
         param bool restart: force container to restart
         """
         if self.is_container_running:
-            logger.info(f'Stop Apollo container {self.name}')
-            cmd = f'docker stop {self.name}'
+            logger.info(f'Stop Apollo container {self.container_name}')
+            cmd = f'docker stop {self.container_name}'
             _ = subprocess.run(cmd, shell=True)
 
     ##### Apollo Cyber Bridge #####
@@ -187,7 +203,7 @@ class ApolloContainer:
             for _ in range(10):
                 # try 10 times max:
                 try:
-                    cmd = f"docker exec --user {self.user} -d {self.name} ./scripts/bridge.sh"
+                    cmd = f"docker exec --user {self.user} -d {self.container_name} ./scripts/bridge.sh"
                     _ = subprocess.run(cmd, shell=True)
                     self.bridge = CyberBridge(self.host, self.bridge_port)
                     break
@@ -255,7 +271,9 @@ class ApolloContainer:
         self,
         hd_map,
         dv_mode="Mkz Standard Debug",
-        apollo_type="Mkz_Example",
+        # Must match a folder under /apollo/modules/calibration/data/.
+        # In Apollo 7.0 this is `mkz_example` (lowercase) rather than `Mkz_Example`.
+        apollo_type="mkz_example",
         max_retry: int = 10,
         retry_interval: float = 1.0,
     ) -> bool:
@@ -287,7 +305,7 @@ class ApolloContainer:
 
             # restart dreamview
             cmd = (
-                f"docker exec --user {self.user} {self.name} "
+                f"docker exec --user {self.user} {self.container_name} "
                 f"./scripts/bootstrap.sh restart --gpu {self.gpu_usage}"
             )
             r = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -335,7 +353,7 @@ class ApolloContainer:
 
         for launch in MODULE_LAUNCHES:
             cmd = (
-                f'docker exec --user {self.user} -d {self.name} '
+                f'docker exec --user {self.user} -d {self.container_name} '
                 f'bash -c "'
                 f'source /apollo/scripts/apollo_base.sh && '
                 f'export CUDA_VISIBLE_DEVICES={self.gpu_usage} '
@@ -361,7 +379,7 @@ class ApolloContainer:
 
         for launch in MODULE_LAUNCHES:
             cmd = (
-                f'docker exec --user {self.user} {self.name} '
+                f'docker exec --user {self.user} {self.container_name} '
                 f'bash -c "'
                 f'source /apollo/scripts/apollo_base.sh && '
                 f'cyber_launch stop {launch}'
@@ -379,21 +397,21 @@ class ApolloContainer:
         logger.info(f'Start Apollo recorder: {record_folder}/{record_id}')
 
         # cmd = f"docker exec --user {self.user} {self.name} rm -rf cyber_recorder.log.INFO*"
-        cmd = f"docker exec --user {self.user} {self.name} sh -c 'find /apollo -name \"cyber_recorder.log.INFO.*\" -delete'"
+        cmd = f"docker exec --user {self.user} {self.container_name} sh -c 'find /apollo -name \"cyber_recorder.log.INFO.*\" -delete'"
         # logger.debug(cmd)
         _ = subprocess.run(cmd, shell=True)
 
-        cmd = f"docker exec --user {self.user} {self.name} rm -rf {record_folder}/{record_id}"
+        cmd = f"docker exec --user {self.user} {self.container_name} rm -rf {record_folder}/{record_id}"
         # logger.debug(cmd)
         _ = subprocess.run(cmd, shell=True)
 
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p {record_folder}/{record_id}"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p {record_folder}/{record_id}"
         # logger.debug(cmd)
         _ = subprocess.run(cmd, shell=True)
 
         container_cmd_recorder = "/apollo/bazel-bin/cyber/tools/cyber_recorder/cyber_recorder"
         container_cmd_cmd = f"{container_cmd_recorder} record -o {record_folder}/{record_id}/recording -a &"
-        cmd = f"docker exec -d --user {self.user} {self.name} {container_cmd_cmd}"
+        cmd = f"docker exec -d --user {self.user} {self.container_name} {container_cmd_cmd}"
         # logger.debug(cmd)
         _ = subprocess.run(cmd, shell=True)
         time.sleep(1.0)
@@ -404,17 +422,17 @@ class ApolloContainer:
         """
         logger.info(f'Stop Apollo recorder.')
         container_cmd = "python3 /apollo/scripts/record_bag.py --stop --stop_signal SIGINT"
-        cmd = f"docker exec --user {self.user} {self.name} {container_cmd}"
+        cmd = f"docker exec --user {self.user} {self.container_name} {container_cmd}"
         # cmd = f"docker exec {self.name} {container_cmd}"
         _ = subprocess.run(cmd, shell=True)
         time.sleep(1.0)
 
     def copy_record(self, record_folder: str, record_id: str, target_folder: str, delete=False):
-        logger.info(f'Copy Apollo record: {self.name}:{record_folder}/{record_id} {target_folder}')
-        cmd = f'docker cp {self.name}:{record_folder}/{record_id} {target_folder}'
+        logger.info(f'Copy Apollo record: {self.container_name}:{record_folder}/{record_id} {target_folder}')
+        cmd = f'docker cp {self.container_name}:{record_folder}/{record_id} {target_folder}'
         _ = subprocess.run(cmd, shell=True)
         if delete:
-            cmd = f'docker exec --user {self.user} {self.name} rm -rf {record_folder}/{record_id}'
+            cmd = f'docker exec --user {self.user} {self.container_name} rm -rf {record_folder}/{record_id}'
             # cmd = f'docker exec {self.name} rm -rf {record_folder}/{record_id}'
             _ = subprocess.run(cmd, shell=True)
 
@@ -423,22 +441,22 @@ class ApolloContainer:
         """
         Removes Apollo's log files to save disk space
         """
-        cmd = f"docker exec --user {self.user} {self.name} rm -rf /apollo/data"
+        cmd = f"docker exec --user {self.user} {self.container_name} rm -rf /apollo/data"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} rm -rf /apollo/records"
+        cmd = f"docker exec --user {self.user} {self.container_name} rm -rf /apollo/records"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} sh -c 'find /apollo -name \"*.log.*\" -delete'"
+        cmd = f"docker exec --user {self.user} {self.container_name} sh -c 'find /apollo -name \"*.log.*\" -delete'"
         _ = subprocess.run(cmd, shell=True)
         # create data dir
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p /apollo/data"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p /apollo/data"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p /apollo/data/bag"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p /apollo/data/bag"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p /apollo/data/log"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p /apollo/data/log"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p /apollo/data/core"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p /apollo/data/core"
         _ = subprocess.run(cmd, shell=True)
-        cmd = f"docker exec --user {self.user} {self.name} mkdir -p /apollo/records"
+        cmd = f"docker exec --user {self.user} {self.container_name} mkdir -p /apollo/records"
         _ = subprocess.run(cmd, shell=True)
 
     ###### Global ######
@@ -469,7 +487,7 @@ class ApolloContainer:
         return False
 
     def safe_shutdown(self):
-        logger.warning(f"Entering safe shutdown for container: {self.name}")
+        logger.warning(f"Entering safe shutdown for container: {self.container_name}")
         try:
             self.stop_recorder()
         except Exception:
@@ -481,7 +499,7 @@ class ApolloContainer:
             pass
         
     def start(self) -> bool:
-        logger.info(f"Starting Apollo container: {self.name}")
+        logger.info(f"Starting Apollo container: {self.container_name}")
 
         # 1️⃣ 启动 container
         self.start_container()
@@ -496,7 +514,7 @@ class ApolloContainer:
             # 4️⃣ container 级别 retry（重操作）
             for i in range(5):
                 logger.warning(
-                    f"[{i+1}/5] Restart Apollo container due to Dreamview failure: {self.name}"
+                    f"[{i+1}/5] Restart Apollo container due to Dreamview failure: {self.container_name}"
                 )
                 self.restart_container()
                 self.clean_cache()
@@ -505,10 +523,10 @@ class ApolloContainer:
                     break
             else:
                 # ❗ 最终失败，进入安全状态
-                logger.error(f"Dreamview failed after container retries: {self.name}")
+                logger.error(f"Dreamview failed after container retries: {self.container_name}")
                 self.safe_shutdown()
                 raise RuntimeError(
-                    f"Dreamview not running after retries: {self.name}"
+                    f"Dreamview not running after retries: {self.container_name}"
                 )
 
         # 5️⃣ Dreamview OK，开始 modules
@@ -520,7 +538,7 @@ class ApolloContainer:
                 self.safe_shutdown()
                 raise RuntimeError("Apollo modules not running")
 
-        logger.info(f"Apollo container {self.name} started successfully")
+        logger.info(f"Apollo container {self.container_name} started successfully")
         return True
 
 
