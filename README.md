@@ -34,7 +34,7 @@ Before installation, please ensure the following dependencies are available on y
 ## 📄 Documentation
 
 - **Installation Guide**  
-  👉 [Installation](documents/install)
+  👉 [Installation](documents/install.md)
 
 ---
 
