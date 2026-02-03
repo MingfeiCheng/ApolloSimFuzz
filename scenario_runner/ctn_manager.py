@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from loguru import logger
 from typing import List
@@ -35,6 +36,11 @@ def create_apollo_ctn_configs(
     num_gpus = len(available_gpus)
     logger.info(f"Setting up {apollo_ctn_num} apollo containers for parallel execution with AVAILABLE {num_gpus} GPUs: {available_gpus}")
 
+    # Docker validates --cpus against the host CPU count. Cap requested CPU so
+    # we don't fail on smaller machines (e.g. 12-core host cannot run --cpus 24.0).
+    host_cpus = float(os.cpu_count() or 1)
+    cpu_cap = min(24.0, host_cpus)
+
     operators = []
     for i in range(apollo_ctn_num):
         # If there is only one GPU, assign all containers to it
@@ -48,7 +54,8 @@ def create_apollo_ctn_configs(
             idx=i,
             container_name=f"apollo_{run_tag}_{i}",
             gpu=gpu_id,
-            cpu='24.0', # TODO: move to config
+            # TODO: move to config
+            cpu=str(cpu_cap),  # capped by host CPU count
             apollo_root=apollo_root,
             dreamview_port=dreamview_port,
             bridge_port=bridge_port,
