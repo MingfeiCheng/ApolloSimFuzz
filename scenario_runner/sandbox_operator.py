@@ -44,7 +44,18 @@ class SandboxContainer:
             time.sleep(1.0)
             
         ctn = docker.from_env().containers.get(self.container_name)
-        return ctn.attrs['NetworkSettings']['IPAddress']
+        ns = ctn.attrs.get("NetworkSettings") or {}
+        # Newer Docker versions may not populate top-level "IPAddress"; prefer Networks.
+        ip = ns.get("IPAddress")
+        if ip:
+            return ip
+        networks = ns.get("Networks") or {}
+        for net in networks.values():
+            ip = net.get("IPAddress")
+            if ip:
+                return ip
+        # Fallback for host-networked containers (or unexpected daemon payloads)
+        return "localhost"
     
     @property
     def is_running(self) -> bool:
@@ -152,7 +163,16 @@ class SandboxOperator:
         if not self.is_running:
             raise RuntimeError(f"Container {self.container_name} is not running.")
         ctn = docker.from_env().containers.get(self.container_name)
-        return ctn.attrs["NetworkSettings"]["IPAddress"]
+        ns = ctn.attrs.get("NetworkSettings") or {}
+        ip = ns.get("IPAddress")
+        if ip:
+            return ip
+        networks = ns.get("Networks") or {}
+        for net in networks.values():
+            ip = net.get("IPAddress")
+            if ip:
+                return ip
+        return "localhost"
 
     # =====================
     # Connection handling
