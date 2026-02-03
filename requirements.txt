@@ -21,3 +21,5 @@ tabulate
 opencv-python
 matplotlib
 natsort
+deap
+ray
