@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtualenv / Conda
+.venv/
+venv/
+ENV/
+env/
+.env
+.conda/
+conda-bld/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+
+# Logs
+*.log
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# ApolloSimFuzz outputs
+results/
+
+# Local clone of Apollo
+apollo/
+
+# TrafficSandbox generated artifacts / caches
+TrafficSandbox/**/__pycache__/
+TrafficSandbox/**/.pytest_cache/
+TrafficSandbox/logs/
+TrafficSandbox/map_toolkit/data/**/map.pickle
+
+# Large map assets that are user/environment specific
+TrafficSandbox/map_toolkit/data/**/map.json
