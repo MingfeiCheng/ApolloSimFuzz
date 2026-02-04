@@ -19,6 +19,8 @@ INCLUDE_LIST=(
   requirements.txt
   VERSION
   documents
+  LICENSE
+  reference.bib
 )
 
 find . -type d -name "__pycache__" -exec rm -rf {} +
