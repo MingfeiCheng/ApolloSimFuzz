@@ -507,7 +507,7 @@ class RandomFuzzer:
             seed.feedback_result = feedback_result
             seed.set_scenario_dir(scenario_dir)
             individuals[ind_index][0] = seed            
-            individuals[ind_index] = self.assign_feedback_to_ind(individuals[ind_index], feedback_result)
+            individuals[ind_index] = self.assign_feedback_to_ind(individuals[ind_index])
             
             # add breif
             batch_info['seed_recorder'].append({
