@@ -21,17 +21,18 @@ class MapRegionSpace:
     forbidden_region_points = []  # if empty, means no restriction
     
     # refine lanes and crosswalks
-    driving_lanes = []  # if empty, means no restriction
+    valid_lanes = []  # if empty, means no restriction
     crosswalks = []     # if empty, means no restriction
     forbidden_lanes = []  # if empty, means no restriction
     
-    potential_route_lanes = []
+    potential_route_lanes = [] # define the route lanes, pool
+    
+    coarse_buffer = 20.0  # keep 80% of lanes when refining
+    forbidden_ratio = 0.8  # keep 80% of lanes when forbidding
     
 @dataclass
 class EGOSpace:
-    num_range = [1, 5]
-    route_length_range = [50.0, 200.0]
-    trigger_time_range = [0.0, 5.0]
+    route = []
     
     model_range = [
         "vehicle.lincoln.mkz",
@@ -51,8 +52,10 @@ class NPCVhicleSpace:
     num_range = [0, 5] # now we fixed
     trigger_time_range = [0.0, 5.0]
     speed_range = [0.3, 10.0]  # in m/s
+    lateral_range = [-2.0, 2.0]  # in meters
     delta_speed = 2.0 # in m/s
     route_length_range = [100.0, 400.0]  # in meters
+    route_interval = 2.0  # in meters
     
     model_range = [
         "vehicle.lincoln.mkz",
@@ -65,6 +68,9 @@ class NPCVhicleSpace:
     dist2pedestrian = 1.0 # always on sidewals
     dist2static_same_lane = 10.0
     dist2static_other_lane = 5.0
+    
+    # dist to forbidden region
+    endpoint_dist2forbidden_region = 10.0
     
 @dataclass
 class NPCPedestrianSpace:
@@ -87,7 +93,11 @@ class NPCPedestrianSpace:
 @dataclass
 class NPCStaticSpace:
     
-    num = [0, 2]   
+    num_range = [0, 2]   
+    model_range = [
+        "static.traffic_cone"
+    ]
+    
     # other hyperparameters
     dist2vehicle_same_lane = 10.0
     dist2vehicle_other_lane = 5.0 # in case overlapping
@@ -126,13 +136,11 @@ class ScenarioODDSpace:
                 precipitation: [0, 80]
                 fog_distance: [0, 200]
         
-        只更新给定字段，未指定字段保持默认。
         """
 
         if space_config is None:
             return
         
-        # 依次更新每个空间
         self._assign_config_to_space("map_region_space", MapRegionSpace, space_config)
         self._assign_config_to_space("ego_space", EGOSpace, space_config)
         self._assign_config_to_space("npc_vehicle_space", NPCVhicleSpace, space_config)
@@ -141,21 +149,6 @@ class ScenarioODDSpace:
         self._assign_config_to_space("traffic_light_space", TrafficLightSpace, space_config)
 
     def _assign_config_to_space(self, attr_name: str, cls, cfg: DictConfig):
-        """
-        将 cfg 中 attr_name 对应的配置赋值给 self.attr_name。
-
-        attr_name : 字段名称（字符串）
-        cls : dataclass 类
-        cfg : DictConfig
-        
-        示例：
-        cfg = {
-          "ego_space": {
-              "trigger_time": [0, 5],
-              "route_length": [60, 200]
-          }
-        }
-        """
         if attr_name not in cfg:
             return
         

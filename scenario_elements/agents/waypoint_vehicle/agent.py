@@ -37,9 +37,9 @@ class WaypointVehicleConfig(BaseModel):
 def get_basic_config():
     return {
         "max_speed": 15.0,
-        "max_speed_junction": 10.0,
-        "max_acceleration": 6.0,
-        "max_deceleration": -6.0,
+        "max_speed_junction": 8.0,
+        "max_acceleration": 5.0,
+        "max_deceleration": -5.0,
         "max_steering": 0.8,
         "collision_threshold": 5.0,
         "ignore_vehicle": True,
@@ -49,7 +49,7 @@ def get_basic_config():
         "min_distance": 6.0, # to filter next waypoint
         "collision_distance_threshold": 5.0,
         "pid_lateral_cfg": {
-            'K_P': 1.3,
+            'K_P': 1.0,
             'K_D': 0.05,
             'K_I': 0.01,
         },
@@ -57,8 +57,7 @@ def get_basic_config():
             'K_P': 1.0,
             'K_D': 0.02,
             'K_I': 0.1,
-        },
-        "remove_after_finish" : False
+        }
     }
 
 def get_polygon(location_x, location_y, length, width, back_edge_to_center, heading, buffer: float = 0.0) -> Polygon:
@@ -78,7 +77,7 @@ class WaypointVehicleAgent(AgentBase):
     
     prefix = 'waypoint_vehicle'
     MIN_DISTANCE_PERCENTAGE = 0.95
-    running_frequency = 25.0
+    running_frequency = 20.0
 
     def __init__(
         self,
@@ -106,6 +105,8 @@ class WaypointVehicleAgent(AgentBase):
         self.debug = self.other_config.get('debug', False)
         self.debug_folder = os.path.join(self.output_folder, f"debug/{self.prefix}")
         self.user_parameters = self.other_config.get('parameters', {})
+        self.stop_remove_period = self.other_config.get('stop_remove_period',30.0)
+        self.finish_remove_period = self.other_config.get('finish_remove_period',30.0)
         
         # actor configs
         self.actor_config_py: WaypointVehicleConfig = WaypointVehicleConfig.model_validate(self.actor_config)
@@ -122,6 +123,7 @@ class WaypointVehicleAgent(AgentBase):
         self._dt = 1.0 / self.running_frequency
         self.step = 0
         self.last_move_time = 0.0
+        self.initial_ignore_vehicle = self._ignore_vehicle
         
         if self.debug:
             os.makedirs(self.debug_folder, exist_ok=True)
@@ -145,7 +147,6 @@ class WaypointVehicleAgent(AgentBase):
         self._max_deceleration = parameters.get('max_deceleration', -6.0)
         self._max_steering = parameters.get('max_steering', 0.8)
         self._collision_threshold = parameters.get('collision_threshold', 5.0)
-        self._remove_after_finish = parameters.get('remove_after_finish', False)
         self._collision_distance_threshold = parameters.get('collision_distance_threshold', 5.0)
         self._buffer_size = 5
         self.pid_lat_cfg = parameters.get('pid_lateral_cfg', {'K_P': 1.0, 'K_D': 0.01, 'K_I': 0.0})
@@ -160,19 +161,6 @@ class WaypointVehicleAgent(AgentBase):
         self.step += 1
         start = time.time()
         
-        if not self._waypoints_queue and not self._waypoint_buffer:
-            self.task_finished = True
-            self._apply_control(0.0, 1.0, 0.0)
-            return
-
-        while len(self._waypoint_buffer) < self._buffer_size and self._waypoints_queue:
-            self._waypoint_buffer.append(self._waypoints_queue.popleft())
-
-        target_wp = copy.deepcopy(self._waypoint_buffer[0])
-                
-        target_speed = min(target_wp['speed'], self._max_speed)
-        target_loc = target_wp['location']
-
         actor_info = snapshot['actors'][self.id]
         curr_loc = actor_info['location']
         curr_heading = curr_loc['yaw']
@@ -181,6 +169,28 @@ class WaypointVehicleAgent(AgentBase):
         time_info = snapshot.get('time', {})
         current_game_time = time_info.get('game_time', 0.0)
         
+        if not self._waypoints_queue and not self._waypoint_buffer:
+            
+            delta_time = current_game_time - self._last_move_time
+            if delta_time > self.finish_remove_period:
+                self.task_finished = True
+                
+            self._apply_control(0.0, 1.0, 0.0)
+            return
+
+        while len(self._waypoint_buffer) < self._buffer_size and self._waypoints_queue:
+            self._waypoint_buffer.append(self._waypoints_queue.popleft())
+
+        target_wp = copy.deepcopy(self._waypoint_buffer[0])
+        
+        # delta_speed
+        delta_speed_max = max(0.0, min(abs(curr_speed) + abs(self._max_acceleration) * self._dt, self._max_speed))
+        
+        target_speed = min(target_wp['speed'], delta_speed_max, self._max_speed)
+        
+        # target_speed = min(target_wp['speed'], self._max_speed)
+        target_loc = target_wp['location']
+
         # not started yet
         if current_game_time < self.trigger_time:
             self._apply_control(0.0, 1.0, 0.0)
@@ -190,11 +200,18 @@ class WaypointVehicleAgent(AgentBase):
         
         if curr_speed <= 0.001:
             delta_time = current_game_time - self._last_move_time
-            if delta_time > 30.0:
+            if delta_time > self.stop_remove_period:
                 self.task_finished = True
+            
+            # avoid deadlock by npc vehicles
+            if delta_time > 10.0:
+                self._ignore_vehicle = True
         else:
             self._last_move_time = current_game_time
             self.task_finished = False
+            
+            if curr_speed >= target_speed / 2.0:
+                self._ignore_vehicle = self.initial_ignore_vehicle
 
         if self._obstacle_detected(actor_info, snapshot['actors'], self._dt):
             target_speed = 0.0

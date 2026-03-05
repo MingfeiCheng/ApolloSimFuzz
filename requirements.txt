@@ -21,3 +21,4 @@ tabulate
 opencv-python
 matplotlib
 natsort
+tinyrpc

@@ -19,8 +19,11 @@ class MapConfig(BaseModel):
     coarse_points: List[List[float]] = Field(
         ..., description="List of coarse points defining the drivable area, each point is [x, y]"
     )
-    lanes: Optional[List[str]] = Field(
+    valid_lanes: Optional[List[str]] = Field(
         None, description="List of lane IDs relevant to the scenario"
+    )
+    forbidden_lanes: Optional[List[str]] = Field(
+        None, description="List of forbidden lane IDs in the scenario"
     )
     crosswalks: Optional[List[str]] = Field(
         None, description="List of crosswalk IDs relevant to the scenario"

@@ -1,0 +1,52 @@
+
+feedback:
+  skip_start_frame: 0
+
+oracle:
+  # oracle config
+  skip_start_frame: 0
+  collision_speed_threshold_ego: 0.01
+  collision_speed_threshold_npc: 1.0
+  collision_degree: 90.0
+  
+scenario_space:
+
+  map_region_space:
+    # S1: Intersection (Green Light) - Ego Straight
+    map_name: "san_mateo"
+    region_points:
+      - [559648.20, 4157887.16]
+      - [559642.75, 4157823.71]
+      - [559661.42, 4157800.75]
+      - [559716.77, 4157813.47]
+      - [559735.61, 4157831.15]
+      - [559756.09, 4157887.32]
+      - [559733.14, 4157906.07]
+      - [559673.09, 4157901.49]
+    forbidden_region_points: 
+      - [559676.02, 4157852.61]
+      - [559695.98, 4157829.72]
+      - [559722.16, 4157851.14]
+      - [559700.00, 4157874.40]
+    coarse_buffer: 5.0
+    forbidden_ratio: 0.8
+
+  ego_space:
+    route: [
+        [559724.92, 4157823.48],
+        [559667.70, 4157889.13]
+    ]
+
+  npc_vehicle_space:
+    num_range:
+      - 5
+      - 5
+    route_length_range:
+      - 100.0
+      - 500.0
+    trigger_time_range:
+      - 0.0
+      - 5.0
+    speed_range:
+      - 0.2
+      - 8.0

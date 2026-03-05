@@ -93,7 +93,7 @@ class AgentBase(ABC):
         if self.remove_after_finished:
             try:
                 # NOTE: here is the fixed time
-                time.sleep(5.0)
+                time.sleep(10.0)
                 self.sandbox_operator.sim.remove_actor(self.id)
             except Exception as e:
                 # logger.error(f"Error removing actor '{self.id}': {e}")

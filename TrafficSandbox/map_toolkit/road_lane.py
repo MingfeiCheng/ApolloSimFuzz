@@ -1,6 +1,7 @@
 import rtree
 import copy
 import math
+import numpy as np
 import networkx as nx
 
 from loguru import logger
@@ -533,11 +534,39 @@ class RoadLaneManager(object):
             lane_polygon = Polygon(lane_boundary)
 
             # Check if the position is inside the polygon
-            if lane_polygon.contains(position):
-                return lane_id  # Found the lane ID
-
+            if not lane_polygon.contains(position):
+                # return lane_id  # Found the lane ID
+                continue
+            
+            # sample point is inside the lane polygon
+            lane_length = lane.length
+            
+            # sample s with interval 1.0
+            s = 0.0
+            best_s = None
+            best_dist = float("inf")
+            while s <= lane_length:
+                coord = self.get_coordinate(lane_id, s, 0.0)
+                point_on_lane = Point(coord[0], coord[1])
+                dist = point_on_lane.distance(position)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_s = s
+                s += 1.0
+            
+            if best_s is None:
+                continue
+            
+            return {
+                "lane_id": lane_id,
+                "s": best_s,
+            }
+            
         # If no lane contains the position, return None
-        return None
+        return {
+            "lane_id": None,
+            "s": -1.0,
+        }
     
     def route_planner(self, waypoints: List[Tuple[float, float]]):
         """

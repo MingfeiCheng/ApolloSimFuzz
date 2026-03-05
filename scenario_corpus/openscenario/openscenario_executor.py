@@ -19,7 +19,8 @@ def run_scenario(
     apollo_ctns: List[ApolloCtnConfig],
     scenario_dir: str = None,
     max_sim_time: float = 300, # seconds
-    debug: bool = False
+    debug: bool = False,
+    restart: bool = False,
 ):
     """
     TODO: update this structure
@@ -58,6 +59,9 @@ def run_scenario(
             map_dreamview=apollo_ctn_cfg.map_dreamview,
             map_name=map_name,
         )
+        if restart:
+            apollo_ctn.stop_container()
+            
         apollo_ctn.create_container()
         apollo_ctn.start()
         apollo_ctn.clean_cache()

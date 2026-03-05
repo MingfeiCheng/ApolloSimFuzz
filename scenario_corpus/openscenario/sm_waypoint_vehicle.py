@@ -39,7 +39,12 @@ class SMWaypointVehicle(SubScenarioManager[WaypointVehicleConfig]):
             "actor_config": config.model_dump(),
             "other_config": {
                 "output_folder": self.scenario_dir,
-                "debug": self.debug
+                "debug": self.debug,
+                "stop_remove_period": 180.0,
+                "finish_remove_period": 30.0,
+                "parameters": {
+                    "ignore_vehicle": False
+                }
             },
             "remove_after_finished": True
         }

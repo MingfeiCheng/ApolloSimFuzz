@@ -27,7 +27,6 @@ def main(cfg: DictConfig):
     if fuzzer_config is None:
         raise ValueError("Please provide the fuzzer config.")
     
-    scenario_type = scenario_config.get('type', None)
     fuzzer_type = fuzzer_config.get('type', None)
     
     # config parameters
@@ -63,8 +62,8 @@ def main(cfg: DictConfig):
     OmegaConf.save(config=cfg, f=os.path.join(output_root, 'config.yaml'))
 
     # direct to specific method, such as mr, avfuzzer..
-    logger.info(f'Fuzzer type: {scenario_type}.{fuzzer_type}')
-    fuzzer_class = ENGINE_REGISTRY.get(f"fuzzer.{scenario_type}.{fuzzer_type}")
+    logger.info(f'Fuzzer type: {fuzzer_type}')
+    fuzzer_class = ENGINE_REGISTRY.get(f"fuzzer.{fuzzer_type}")
     logger.info(f'Load fuzzer class from: {fuzzer_class}')
     
     fuzzer_instance = fuzzer_class(

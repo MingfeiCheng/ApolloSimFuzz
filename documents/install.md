@@ -78,7 +78,7 @@ Specifically:
 * Move `apollo_bridge/patches/dev_start_ctn.sh` to:
 
   ```text
-  apollo/scripts/
+  apollo/docker/scripts/
   ```
 
 * Replace the following file to resolve build issues:

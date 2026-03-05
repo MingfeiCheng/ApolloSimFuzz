@@ -21,25 +21,11 @@ class  TraditionalSafetyFeedback(object):
     
     def get_default_feedback(self) -> dict:        
         return {
-            'collision_feedback': self.default_collision_feedback,
-            'dist2center_feedback': self.default_dist2center_feedback,
-            # we do not need the following two, no meaningful for traditional safety feedback
+            'collision_feedback': self.default_collision_feedback, # min is better
             'stuck_feedback': self.default_stuck_feedback,
             'destination_feedback': self.default_destination_feedback,
         }
         
-    def get_single_feedback(self, feedback_dict: dict):
-        # here we use collision score only
-        # minimum is better
-        return feedback_dict['collision_feedback']
-    
-    def get_multiple_feedback(self, feedback_dict: dict):
-        # here we use all feedbacks
-        return [
-            feedback_dict['collision_feedback'], # min
-            feedback_dict['dist2center_feedback'] # max
-        ]
-    
     def save_checkpoint(self, save_dir: str):
         pass
     
@@ -205,11 +191,5 @@ class  TraditionalSafetyFeedback(object):
         
         current_feedback['stuck_feedback'] = navie_stuck_dest_feedback["stuck_feedback"]
         current_feedback['destination_feedback'] = navie_stuck_dest_feedback["destination_feedback"]
-        
-        single_score = self.get_single_feedback(current_feedback)
-        current_feedback['single_score'] = single_score
-        
-        mutliple_scores = self.get_multiple_feedback(current_feedback)
-        current_feedback['mutliple_scores'] = mutliple_scores
         
         return current_feedback
