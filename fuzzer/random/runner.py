@@ -1,6 +1,7 @@
 import os
 import json
 import copy
+import time
 import shutil
 import signal
 import pickle
@@ -176,6 +177,8 @@ class RandomFuzzer:
         
         # other parameters
         self.used_time = 0.0
+        self.container_time = time.time()
+        self.sandbox_time = time.time()
         
         # 5. setup toolbox
         self.toolbox = None
@@ -361,8 +364,16 @@ class RandomFuzzer:
             container_user=self.sandbox_ctn_cfg.container_user
         ) 
         # remove first and create new one for clean state
-        ctn_container.stop()
-        ctn_container.start()
+        if (time.time() - self.sandbox_time) / 60.0 > 30.0:
+            ctn_container.stop()
+            ctn_container.remove()
+            ctn_container.start()
+            self.sandbox_time = time.time()
+            
+        if not ctn_container.is_running:
+            # ctn_container.stop()
+            ctn_container.start()
+            
         return ctn_container.container_name
     
     def execute_individual(
@@ -395,17 +406,25 @@ class RandomFuzzer:
 
         # TODO: assign Apollo CTN Configs
         # ego_num
-        ego_num = len(scenario_config.ego_vehicles)
+        ego_num = len(scenario_config.ego_vehicles)# NOTE: it is important
         apollo_ctns = create_apollo_ctn_configs(
-            run_tag=RunnerConfig.run_tag,
+            run_tag=RunnerConfig.apollo_tag,
             apollo_root=RunnerConfig.apollo_root,
             dreamview_port=RunnerConfig.dreamview_port,
             bridge_port=RunnerConfig.bridge_port,
-            apollo_ctn_num=ego_num
+            apollo_ctn_num=ego_num,
+            use_dreamview=RunnerConfig.use_dreamview
         )
         
         # start sandbox container
         sandbox_container_name = self.start_sandbox_container()
+        
+        if (time.time() - self.container_time) / 60.0 > 120.0:
+            # restart container every 120 minutes to avoid potential memory leak/delay
+            restart_container = True
+            self.container_time = time.time()
+        else:
+            restart_container = False
         
         run_status = run_scenario(
             scenario_config=scenario_config,
@@ -413,7 +432,8 @@ class RandomFuzzer:
             apollo_ctns=apollo_ctns,
             scenario_dir=scenario_dir,
             max_sim_time=RunnerConfig.max_sim_time,
-            debug=RunnerConfig.debug
+            debug=RunnerConfig.debug,
+            restart=restart_container
         )
         
         exec_res = {
